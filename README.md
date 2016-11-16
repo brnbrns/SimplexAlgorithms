@@ -1,5 +1,5 @@
 # Simplex Algorithms
-This repository contains several C++ programs utilizing the Simplex algorithm to solve different types of liner optimization problems.
+This repository contains several C++ programs utilizing the Simplex algorithm to solve different types of linear optimization problems.
 
 ## Simplex
 The simplex algorithm solves linear optimization problems of the forms:
@@ -49,4 +49,4 @@ min
 2 -2 3 3 = 9
 1 -1 2 -1 = 6
 ```
-The program assumes all variables are greater than or eqaul to 0, so this does not need to be specified. Simplex will compute the desired minimum or maximum and report the result in "out.txt" in the same directory. If the problem is unbounded, it will also be reported in "out.txt".
+The program assumes all variables are greater than or equal to 0, so this does not need to be specified. Simplex will compute the desired minimum or maximum and report the result in "out.txt" in the same directory. If the problem is unbounded, it will also be reported in "out.txt".

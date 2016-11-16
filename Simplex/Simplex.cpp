@@ -16,7 +16,7 @@ using namespace std;
   \param c the c matrix
   \param opt the optimal value found
   \param numVars the number of variables in the program
-  \sa outputUnbounded()
+  \sa outputUnbounded(), outputInfeasible()
 */
 void output(vector<vector<float> > *a, vector<float> *b, vector<float> *c, float opt, int numVars)
 {
@@ -101,7 +101,7 @@ void output(vector<vector<float> > *a, vector<float> *b, vector<float> *c, float
   \param b the b matrix
   \param c the c matrix
   \param minimize true if min, false if max
-  \sa output()
+  \sa output(), outputInfeasible()
 */
 void outputUnbounded(vector<vector<float> > *a, vector<float> *b, vector<float> *c, bool minimize)
 {
@@ -136,6 +136,51 @@ void outputUnbounded(vector<vector<float> > *a, vector<float> *b, vector<float> 
     else
       outfile << "z* = infinity" << endl;
     outfile << "The program is unbounded." << endl;
+
+    // close out.txt
+    outfile.close();
+  }
+  // error
+  else
+    cout << "Could not open output file." << endl;
+}
+
+//! Outputs an infeasible solution to "out.txt"
+/*!
+  \param a the A matrix
+  \param b the b matrix
+  \param c the c matrix
+  \sa output(), outputUnbounded()
+*/
+void outputInfeasible(vector<vector<float> > *a, vector<float> *b, vector<float> *c)
+{
+  // open out.txt
+  ofstream outfile;
+  outfile.open("out.txt");
+  // make sure it's open
+  if (outfile.is_open())
+  {
+    // output the final simplex tableau seen
+    outfile << "Final Tableau:" << endl;
+    for (int i=0; i<(*a).size(); i++)
+    {
+      for (int j=0; j<(*a)[0].size(); j++)
+      {
+        // output the A matrix
+        outfile << (*a)[i][j] << " ";
+      }
+      // output the b matrix
+      outfile << "| " << (*b)[i] << endl;
+    }
+    // output the c matrix
+    for (int i=0; i<(*c).size(); i++)
+    {
+      outfile << (*c)[i] << " ";
+    }
+    outfile << endl;
+
+    // problem is infeasible
+    outfile << "The program is infeasible." << endl;
 
     // close out.txt
     outfile.close();
@@ -361,6 +406,23 @@ void simplex(vector<vector<float> > *a, vector<float> *b, vector<float> *c, floa
       if (min_r >= 0)
       {
         stop = true;
+        // check for infeasibility
+        bool infeasible = true;
+        for (int i=0; i<(*c).size(); i++)
+        {
+          // any c > 0, feasible
+          if ((*c)[i] > 0)
+          {
+            infeasible = false;
+            break;
+          }
+        }
+
+        if (infeasible)
+        {
+          outputInfeasible(a, b, c);
+          continue;
+        }
         // min function, output with negative optimal
         if (minimize)
           output(a, b, c, -1*opt, numVars);
