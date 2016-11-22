@@ -15,21 +15,36 @@ maximize cTx subject to Ax >= b, x >= 0
 ```
 For example, a problem of this form is:
 ```
-minimize -3w + x + 3y - z subject to
-w + 2x - y + z = 0,
-2w - 2x + 3y + 3z = 9,
-w - x + 2y - z = 6,
+minimize 3w + x + 3y + z subject to
+w + 2x - y + z = 3,
+5w - 4x + 2y + 3z = 10,
+w - 2x + 2y + 3z = 5,
 w >= 0, x >= 0, y >= 0, z >= 0
 ```
-This program can be solved with a minimum of 7 at w = 1, x = 1, y = 3, z = 0.
+This program can be solved with a minimum of 5.5 at w = 1.3333, x = 0.1667, y = 0, z = 1.3333.
+
 ### Running Simplex
 The Simplex program can be compiled with the following command:
+
+__Unix__
 ```
 g++ Simplex.cpp -o Simplex
 ```
-It can then be run with the command
+
+__Windows__
+```
+cl Simplex.cpp /o Simplex
+```
+It can then be run with the command:
+
+__Unix__
 ```
 ./Simplex
+```
+
+__Windows__
+```
+.\Simplex
 ```
 Simplex reads the input from the "in.txt" file in the same directory. The format of "in.txt" is as follows:
 ```
@@ -44,9 +59,74 @@ The example program above has an "in.txt" file specified as such:
 3
 4
 min
--3 1 3 -1
-1 2 -1 1 = 0
-2 -2 3 3 = 9
-1 -1 2 -1 = 6
+3 1 3 1
+1 2 -1 1 = 3
+5 -4 2 3 = 10
+1 -2 2 3 = 5
 ```
-The program assumes all variables are greater than or equal to 0, so this does not need to be specified. Simplex will compute the desired minimum or maximum and report the result in "out.txt" in the same directory. If the problem is unbounded, it will also be reported in "out.txt".
+The program assumes all variables are greater than or equal to 0, so this does not need to be specified. Simplex will compute the desired minimum or maximum and report the result in "out.txt" in the same directory. If the problem is unbounded or infeasible, it will also be reported in "out.txt".
+
+## Revised Simplex
+The revised simplex algorithm solves linear optimization problems of the forms:
+```
+minimize cTx subject to Ax = b, x >= 0
+minimize cTx subject to Ax <= b, x >= 0
+minimize cTx subject to Ax >= b, x >= 0
+```
+```
+maximize cTx subject to Ax = b, x >= 0
+maximize cTx subject to Ax <= b, x >= 0
+maximize cTx subject to Ax >= b, x >= 0
+```
+For example, a problem of this form is:
+```
+minimize 3w + x + 3y + z subject to
+w + 2x - y + z = 3,
+5w - 4x + 2y + 3z = 10,
+w - 2x + 2y + 3z = 5,
+w >= 0, x >= 0, y >= 0, z >= 0
+```
+This program can be solved with a minimum of 5.5 at w = 1.3333, x = 0.1667, y = 0, z = 1.3333.
+
+### Running Revised Simplex
+The Revised Simplex program can be compiled with the following command:
+
+__Unix__
+```
+g++ RevisedSimplex.cpp -o RevisedSimplex
+```
+
+__Windows__
+```
+cl RevisedSimplex.cpp /o RevisedSimplex
+```
+It can then be run with the command:
+
+__Unix__
+```
+./RevisedSimplex
+```
+
+__Windows__
+```
+.\RevisedSimplex
+```
+RevisedSimplex reads the input from the "in.txt" file in the same directory. The format of "in.txt" is as follows:
+```
+number of constraint equations
+number of variables
+min/max
+objective function
+constraint equations
+```
+The example program above has an "in.txt" file specified as such:
+```
+3
+4
+min
+3 1 3 1
+1 2 -1 1 = 3
+5 -4 2 3 = 10
+1 -2 2 3 = 5
+```
+The program assumes all variables are greater than or equal to 0, so this does not need to be specified. RevisedSimplex will compute the desired minimum or maximum and report the result in "out.txt" in the same directory. If the problem is unbounded or infeasible, it will also be reported in "out.txt".

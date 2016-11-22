@@ -5,8 +5,9 @@
 #include <iostream>
 #include <fstream>
 #include <vector>
-#include <string.h>
-#include <stdlib.h>
+#include <string>
+#include <cstring>
+#include <cstdlib>
 using namespace std;
 
 //! Outputs the result of the Simplex algorithm to "out.txt"
@@ -14,11 +15,12 @@ using namespace std;
   \param a the A matrix
   \param b the b matrix
   \param c the c matrix
+  \param x the optimal x* vector
   \param opt the optimal value found
   \param numVars the number of variables in the program
   \sa outputUnbounded(), outputInfeasible()
 */
-void output(vector<vector<float> > *a, vector<float> *b, vector<float> *c, float opt, int numVars)
+void output(vector<vector<float> > *a, vector<float> *b, vector<float> *c, vector<float> x, float opt, int numVars)
 {
   // open out.txt
   ofstream outfile;
@@ -48,34 +50,6 @@ void output(vector<vector<float> > *a, vector<float> *b, vector<float> *c, float
     outfile << endl;
 
     outfile << "z* = " << opt << endl;
-
-    // get x* from the matrix
-    vector<float> x;
-    // for each column
-    for (int i=0; i<numVars; i++)
-    {
-      // check if x_i is basic
-      bool basic = true;
-      int basic_i = 0;
-      for (int j=0; j<(*a).size(); j++)
-      {
-        // not 0 or 1, not basic
-        if ((*a)[j][i] != 0 && (*a)[j][i] != 1)
-        {
-          basic = false;
-        }
-        // get the basic index
-        if ((*a)[j][i] == 1)
-          basic_i = j;
-      }
-
-      // basic x, get the b value
-      if (basic)
-        x.push_back((*b)[basic_i]);
-      // nonbasic, 0
-      else
-        x.push_back(0.0);
-    }
 
     // output the optimal x
     outfile << "x* = (";
@@ -280,12 +254,13 @@ void reduceC(vector<vector<float> > *a, vector<float> *b, vector<float> *c, floa
   \param a the A matrix
   \param b the b matrix
   \param c the c matrix
+  \param initialC the original c matrix (for calculating optimal)
   \param initialOpt the optimal value to begin the algorithm with
   \param numVars the number of variables in the program
   \param phase 1 or 2, corresponding to what phase of the Simplex Method we are on
   \param minimize true if min, false if max
 */
-void simplex(vector<vector<float> > *a, vector<float> *b, vector<float> *c, float initialOpt, int numVars, int phase, bool minimize)
+void simplex(vector<vector<float> > *a, vector<float> *b, vector<float> *c, vector<float> initialC, float initialOpt, int numVars, int phase, bool minimize)
 {
   // Phase 1
   if (phase == 1)
@@ -341,21 +316,34 @@ void simplex(vector<vector<float> > *a, vector<float> *b, vector<float> *c, floa
       }
 
       // get the pivot row
-      float min_ratio = 0;
-      int piv_row = 0;
+      vector<float> ratios;
       // for each row
       for (int i=0; i<(*a).size(); i++)
       {
-        // check for the smallest positive ratio b[i] / a[i][pivot_column]
-        if ((*a)[i][piv_col] > 0 && ((*b)[i] / (*a)[i][piv_col] < min_ratio || min_ratio == 0))
+        if ((*a)[i][piv_col] == 0)
+          ratios.push_back(-1);
+        else
         {
-          min_ratio = (*b)[i] / (*a)[i][piv_col];
+          // denegerate loop ahead, don't pivot here
+          if ((*a)[i][piv_col] <= 0 && (*b)[i] == 0)
+            ratios.push_back(-1);
+          else
+            ratios.push_back((*b)[i] / (*a)[i][piv_col]);
+        }
+      }
+      float min_ratio = ratios[0];
+      int piv_row = 0;
+      for (int i=1; i<ratios.size(); i++)
+      {
+        if (ratios[i] >= 0 && (ratios[i] < min_ratio || min_ratio < 0))
+        {
+          min_ratio = ratios[i];
           piv_row = i;
         }
       }
 
       // no positive ratios, stop here
-      if (min_ratio <= 0)
+      if (min_ratio < 0)
       {
         stop = true;
         continue;
@@ -378,7 +366,7 @@ void simplex(vector<vector<float> > *a, vector<float> *b, vector<float> *c, floa
     // reduce the new c row so basic variables have 0 cost
     reduceC(a, b, c, &opt);
     // go to phase 2
-    simplex(a, b, c, opt, numVars, 2, minimize);
+    simplex(a, b, c, initialC, opt, numVars, 2, minimize);
   }
   // Phase 2
   else
@@ -423,31 +411,80 @@ void simplex(vector<vector<float> > *a, vector<float> *b, vector<float> *c, floa
           outputInfeasible(a, b, c);
           continue;
         }
-        // min function, output with negative optimal
+
+        // get x* from the matrix
+        vector<float> x;
+        // for each column
+        for (int i=0; i<numVars; i++)
+        {
+          // check if x_i is basic
+          bool basic = true;
+          int basic_i = 0;
+          for (int j=0; j<(*a).size(); j++)
+          {
+            // not 0 or 1, not basic
+            if ((*a)[j][i] != 0 && (*a)[j][i] != 1)
+            {
+              basic = false;
+            }
+            // get the basic index
+            if ((*a)[j][i] == 1)
+              basic_i = j;
+          }
+
+          // basic x, get the b value
+          if (basic)
+            x.push_back((*b)[basic_i]);
+          // nonbasic, 0
+          else
+            x.push_back(0.0);
+        }
+
+        // get optimal
+        opt = 0;
+        // multiply x values with cost function, sum up
+        for (int i=0; i<x.size(); i++){
+          opt += x[i] * initialC[i];
+        }
+
+        // min function, just output
         if (minimize)
-          output(a, b, c, -1*opt, numVars);
-        // max function, just output
+          output(a, b, c, x, opt, numVars);
+        // max function, output with negative optimal
         else
-          output(a, b, c, opt, numVars);
+          output(a, b, c, x, -1*opt, numVars);
         continue;
       }
 
       // get the pivot row
-      float min_ratio = 0;
-      int piv_row = 0;
+      vector<float> ratios;
       // for each row
       for (int i=0; i<(*a).size(); i++)
       {
-        // check for the smallest positive ratio b[i] / a[i][pivot_column]
-        if ((*a)[i][piv_col] > 0 && ((*b)[i] / (*a)[i][piv_col] < min_ratio || min_ratio == 0))
+        if ((*a)[i][piv_col] == 0)
+          ratios.push_back(-1);
+        else
         {
-          min_ratio = (*b)[i] / (*a)[i][piv_col];
+          // denegerate loop ahead, don't pivot here
+          if ((*a)[i][piv_col] <= 0 && (*b)[i] == 0)
+            ratios.push_back(-1);
+          else
+            ratios.push_back((*b)[i] / (*a)[i][piv_col]);
+        }
+      }
+      float min_ratio = ratios[0];
+      int piv_row = 0;
+      for (int i=1; i<ratios.size(); i++)
+      {
+        if (ratios[i] >= 0 && (ratios[i] < min_ratio || min_ratio < 0))
+        {
+          min_ratio = ratios[i];
           piv_row = i;
         }
       }
 
       // no positive ratios, problem is unbounded
-      if (min_ratio <= 0)
+      if (min_ratio < 0)
       {
         stop = true;
         outputUnbounded(a, b, c, minimize);
@@ -496,7 +533,7 @@ int main()
     }
 
     // get the c row
-    int c[numVars];
+    vector<float> vec_c;
     if (getline(infile, line))
     {
       // read in one at a time
@@ -504,10 +541,11 @@ int main()
       char *token = strtok((char *)line.c_str(), " ");
       while (token)
       {
-        c[i] = atoi(token);
-        if (!minimize)
+        if (minimize)
+          vec_c.push_back(atof(token));
+        else
           // maximize function, negate c
-          c[i] = -1 * c[i];
+          vec_c.push_back(-1*atof(token));
         i++;
         token = strtok(NULL, " ");
       }
@@ -576,14 +614,8 @@ int main()
     infile.close();
 
     // convert the c array, add 0s for added columns
-    vector<float> vec_c;
-    for (int i=0; i<vec_a[0].size(); i++)
-    {
-      if (i<sizeof(c)/sizeof(c[0]))
-        vec_c.push_back(c[i]);
-      else
-        vec_c.push_back(0.0);
-    }
+    for (int i=numVars; i<vec_a[0].size(); i++)
+      vec_c.push_back(0.0);
 
     // assume phase 1
     int phase = 1;
@@ -592,7 +624,7 @@ int main()
       phase = 2;
 
     // run the Simplex algorithm
-    simplex(&vec_a, &vec_b, &vec_c, 0, numVars, phase, minimize);
+    simplex(&vec_a, &vec_b, &vec_c, vec_c, 0, numVars, phase, minimize);
 
   }
   // error
