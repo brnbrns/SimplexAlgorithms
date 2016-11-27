@@ -196,3 +196,64 @@ min
 -1 3 0 -3 0 1 = 12
 ```
 The program assumes all variables are greater than or equal to 0, so this does not need to be specified. Dual Simplex will compute the desired minimum or maximum and report the result in "out.txt" in the same directory. If the problem is unbounded or infeasible, it will also be reported in "out.txt".
+
+## Primal-Dual Simplex
+The primal-dual simplex algorithm solves linear optimization problems of the forms:
+```
+minimize cTx subject to Ax = b, x >= 0
+maximize cTx subject to Ax = b, x >= 0
+```
+
+For example, a problem of this form is:
+```
+minimize 2x + y + 4z subject to
+x + y + 2z = 3,
+2x + y + 3z = 5,
+x >= 0, y >= 0, z >= 0
+```
+This program can be solved with a minimum of 5 at x = 2, y = 1, z = 0.
+__Note:__ For the primal-dual simplex algorithm, the problem entered must have an initial dual feasible solution (lambda) specified in "in.txt".
+
+### Running Primal-Dual Simplex
+The Primal-Dual Simplex program can be compiled with the following command:
+
+__Unix__
+```
+g++ PrimalDualSimplex.cpp -o PrimalDualSimplex
+```
+
+__Windows__
+```
+cl PrimalDualSimplex.cpp /o PrimalDualSimplex
+```
+It can then be run with the command:
+
+__Unix__
+```
+./PrimalDualSimplex
+```
+
+__Windows__
+```
+.\PrimalDualSimplex
+```
+Primal-Dual Simplex reads the input from the "in.txt" file in the same directory. The format of "in.txt" is as follows:
+```
+number of constraint equations
+number of variables
+initial lambda
+min/max
+objective function
+constraint equations
+```
+The example program above has an "in.txt" file specified as such:
+```
+2
+3
+0 0
+min
+2 1 4
+1 1 2 = 3
+2 1 3 = 5
+```
+The program assumes all variables are greater than or equal to 0, so this does not need to be specified. Primal-Dual Simplex will compute the desired minimum or maximum and report the result in "out.txt" in the same directory. If the problem is unbounded or infeasible, it will also be reported in "out.txt".
